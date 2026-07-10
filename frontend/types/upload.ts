@@ -5,16 +5,18 @@ export interface UploadedFile {
   file: File;
   progress: number;
   status: FileStatus;
+  preview?: string; 
+  error?: string;
 }
 
 export interface FileUploadProps {
-    title: string;
-    description: string;
-    maxFiles: number;
-    maxSizeMB: number;
-    acceptedLabel: string;
-    submitLabel: string;
-    cancelLabel: string;
-    onSubmit: (files: UploadedFile[]) => void;
-    onCancel: () => void;
+    title?: string;
+    description?: string;
+    maxFiles?: number;
+    maxSizeMB?: number;
+    acceptedLabel?: string;
+    submitLabel?: string;
+    cancelLabel?: string;
+    onSubmit?: (files: UploadedFile[]) => void;
+    onCancel?: () => void;
 }

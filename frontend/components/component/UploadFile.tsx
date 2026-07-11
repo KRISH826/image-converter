@@ -10,6 +10,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { toast } from 'sonner'
 import { useUploadandConvertImageMutation } from '@/services/conversionApi'
 import DownloadedFile from './DownloadedFile'
+import ProcessLoading from './ProcessLoading'
 
 const title = 'Submit Your Report'
 const description = 'Attach supporting documents to complete your submission.'
@@ -124,8 +125,8 @@ const UploadFile = ({
             const result = await uploadAndConvertImage(formData).unwrap();
             toast.success("all DOne")
             console.log(result.data)
-            SetresultData(result.data)  
-            if(onSubmit) onSubmit(result)
+            SetresultData(result.data)
+            if (onSubmit) onSubmit(result)
             clearAll()
         }
         catch (error: any) {
@@ -135,7 +136,7 @@ const UploadFile = ({
     }
 
     const clearDownload = () => {
-        if(resultData.length > 0) {
+        if (resultData.length > 0) {
             SetresultData([])
         }
     }
@@ -233,7 +234,11 @@ const UploadFile = ({
                 }
 
                 {/* results-data */}
-                {resultData.length > 0 && <DownloadedFile data={resultData} />}
+                {
+                    isLoading ? <ProcessLoading /> : <>
+                        {resultData.length > 0 && <DownloadedFile data={resultData} />}
+                    </>
+                }
 
             </CardContent>
             <CardFooter className='flex justify-end items-center gap-2'>
@@ -247,12 +252,14 @@ const UploadFile = ({
                 <Button size="lg" variant="default" disabled={!!isLoading || validCount === 0} onClick={handleSubmit}>
                     {
                         isLoading ? (
-                            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                            <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Processing</>
                         ) : (
-                            <UploadCloud className="mr-1 h-4 w-4" />
+                            <>
+                                <UploadCloud className="mr-1 h-4 w-4" /> Submit
+                            </>
                         )
                     }
-                    Submit
+
                 </Button>
             </CardFooter>
         </Card>

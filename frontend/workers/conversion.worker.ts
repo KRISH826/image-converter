@@ -18,10 +18,11 @@ export const conversionImageWorker = () => {
                 .resize({
                     width: 1920,
                     withoutEnlargement: true,
-                    fit: 'inside'
+                    fit: 'inside',
+                    kernel: 'linear'
                 }).webp({
                     quality: 30,
-                    effort: 4
+                    effort: 2
                 }).toBuffer()
 
             const originalName = filename.substring(0, filename.lastIndexOf('.')) || filename;

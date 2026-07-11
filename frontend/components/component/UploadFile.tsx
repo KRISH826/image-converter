@@ -8,6 +8,7 @@ import { FileStatus, FileUploadProps, UploadedFile } from '@/types/upload'
 import { FileImage, Loader2, UploadCloud, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { toast } from 'sonner'
+import { useUploadandConvertImageMutation } from '@/services/conversionApi'
 
 const title = 'Submit Your Report'
 const description = 'Attach supporting documents to complete your submission.'
@@ -30,7 +31,7 @@ const UploadFile = ({
     const [files, setFiles] = useState<UploadedFile[]>([])
     const [isDragging, setIsDragging] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null);
-    const [loading, setIsloading] = useState<Boolean>(false)
+    const [uploadAndConvertImage, { isLoading }] = useUploadandConvertImageMutation()
 
 
     const validateFiles = (file: File) => {
@@ -110,15 +111,22 @@ const UploadFile = ({
         onCancel && onCancel()
     }
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        const validFiles = files.filter((file) => file.status !== 'error')
+        if (validFiles.length === 0) return
+        const formData = new FormData();
+        validFiles.forEach((file) => {
+            formData.append('files', file.file)
+        })
         try {
-            setIsloading(true)
-            const validFiles = files.filter((file) => file.status !== 'error')
-            onSubmit && onSubmit(validFiles)
+            const result = await uploadAndConvertImage(formData).unwrap();
+            toast.success("all DOne")
+            console.log(result)
+            if(onSubmit) onSubmit(result)
             clearAll()
-            setIsloading(false)
         }
-        catch {
+        catch (error: any) {
+            console.error('Upload component error:', error)
             toast('Something went wrong. Please try again.')
         }
     }
@@ -219,9 +227,9 @@ const UploadFile = ({
                 <Button size="lg" variant="outline">
                     Cancel
                 </Button>
-                <Button size="lg" variant="default" onClick={handleSubmit}>
+                <Button size="lg" variant="default" disabled={!!isLoading || validCount === 0} onClick={handleSubmit}>
                     {
-                        loading ? (
+                        isLoading ? (
                             <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                         ) : (
                             <UploadCloud className="mr-1 h-4 w-4" />

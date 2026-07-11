@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
                 const buffer = Buffer.from(arrayBuffer);
 
                 const webpBuffer = await sharp(buffer).webp({
-                    quality: 80,
+                    quality: 50,
                     lossless: true,
                     effort: 4
                 }).toBuffer();

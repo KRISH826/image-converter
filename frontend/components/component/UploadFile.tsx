@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { FileStatus, FileUploadProps, UploadedFile } from '@/types/upload'
-import { FileImage, UploadCloud, X } from 'lucide-react'
+import { FileImage, Loader2, UploadCloud, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { toast } from 'sonner'
 
@@ -30,6 +30,7 @@ const UploadFile = ({
     const [files, setFiles] = useState<UploadedFile[]>([])
     const [isDragging, setIsDragging] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null);
+    const {loading, setIsloading} = useState(false)
 
 
     const validateFiles = (file: File) => {
@@ -110,8 +111,16 @@ const UploadFile = ({
     }
 
     const handleSubmit = () => {
-        const validFiles = files.filter((file) => file.status !== 'error')
-        onSubmit && onSubmit(validFiles)
+        try {
+            setIsloading(true)
+            const validFiles = files.filter((file) => file.status !== 'error')
+            onSubmit && onSubmit(validFiles)
+            clearAll()
+            setIsloading(false)
+        }
+        catch {
+            toast('Something went wrong. Please try again.')
+        }
     }
 
     const validCount = files.filter((f) => f.status !== 'error').length
@@ -210,7 +219,14 @@ const UploadFile = ({
                 <Button size="lg" variant="outline">
                     Cancel
                 </Button>
-                <Button size="lg" variant="default">
+                <Button size="lg" variant="default" onClick={handleSubmit}>
+                    {
+                        loading ? (
+                            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                        ) : (
+                            <UploadCloud className="mr-1 h-4 w-4" />
+                        )
+                    }
                     Submit
                 </Button>
             </CardFooter>

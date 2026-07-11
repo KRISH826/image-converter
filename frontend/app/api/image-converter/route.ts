@@ -1,11 +1,6 @@
 import { NextResponse, NextRequest } from "next/server"
 import sharp from "sharp"
 
-export const config = {
-    api: {
-        bodyParser: false
-    }
-}
 
 export async function POST(request: NextRequest) {
     try {
@@ -30,7 +25,7 @@ export async function POST(request: NextRequest) {
                     withoutEnlargement: true
                 })
                 .webp({
-                    quality: 75,
+                    quality: 30,
                     effort: 4
                 }).toBuffer();
 

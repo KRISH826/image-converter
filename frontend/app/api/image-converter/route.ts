@@ -24,9 +24,13 @@ export async function POST(request: NextRequest) {
                 const arrayBuffer = await file.arrayBuffer();
                 const buffer = Buffer.from(arrayBuffer);
 
-                const webpBuffer = await sharp(buffer).webp({
-                    quality: 50,
-                    lossless: true,
+                const webpBuffer = await sharp(buffer)
+                .resize({
+                    width: 1920,
+                    withoutEnlargement: true
+                })
+                .webp({
+                    quality: 75,
                     effort: 4
                 }).toBuffer();
 

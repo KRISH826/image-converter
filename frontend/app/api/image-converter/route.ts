@@ -27,6 +27,8 @@ export async function POST(request: NextRequest) {
                 return {
                     jobId: job.id,
                     filename: file.name,
+                    mimeType: file.type
+
                 }
             })
         );

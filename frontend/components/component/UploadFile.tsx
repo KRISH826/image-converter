@@ -123,7 +123,8 @@ const UploadFile = ({
         try {
             const result = await uploadAndConvertImage(formData).unwrap();
             toast.success("all DOne")
-            SetresultData(result.data)
+            console.log(result.data)
+            SetresultData(result.data)  
             if(onSubmit) onSubmit(result)
             clearAll()
         }

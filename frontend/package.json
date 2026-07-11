@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently \"next dev\" \"tsx workers/index.ts\"",
+    "worker": "tsx src/workers/index.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -13,6 +14,7 @@
     "bullmq": "^5.80.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dotenv": "^17.4.2",
     "ioredis": "^5.11.1",
     "lucide-react": "^1.24.0",
     "motion": "^12.42.2",
@@ -34,9 +36,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^10.0.3",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
     "tailwindcss": "^4",
+    "tsx": "^4.23.0",
     "typescript": "^5"
   }
 }

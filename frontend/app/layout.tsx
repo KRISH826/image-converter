@@ -24,6 +24,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${montserrat.variable} dark h-full antialiased`}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
         <Header />

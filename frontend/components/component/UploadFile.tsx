@@ -30,7 +30,7 @@ const UploadFile = ({
     const [files, setFiles] = useState<UploadedFile[]>([])
     const [isDragging, setIsDragging] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null);
-    const {loading, setIsloading} = useState(false)
+    const [loading, setIsloading] = useState<Boolean>(false)
 
 
     const validateFiles = (file: File) => {

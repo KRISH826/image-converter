@@ -1,3 +1,4 @@
+import { imageQueue } from "@/workers/queue";
 import { NextResponse, NextRequest } from "next/server"
 import sharp from "sharp"
 
@@ -17,29 +18,18 @@ export async function POST(request: NextRequest) {
         const processedFile = await Promise.all(
             files.map(async (file) => {
                 const arrayBuffer = await file.arrayBuffer();
-                const buffer = Buffer.from(arrayBuffer);
 
-                const webpBuffer = await sharp(buffer)
-                .resize({
-                    width: 1920,
-                    withoutEnlargement: true
+                const job = await imageQueue.add("image-conversion", {
+                    filename: file.name,
+                    bufferBase64: Buffer.from(arrayBuffer).toString("base64"),         
                 })
-                .webp({
-                    quality: 30,
-                    effort: 4
-                }).toBuffer();
-
-                const originalName = file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
-                const newName = `${originalName}.webp`;
 
                 return {
-                    name: newName,
-                    base64: webpBuffer.toString('base64'),
-                    mimeType: 'image/webp',
-                    size: webpBuffer.length
+                    jobId: job.id,
+                    filename: file.name,
                 }
             })
-        )
+        );
 
         return NextResponse.json({
             success: true,

@@ -27,9 +27,10 @@ export const conversionImageWorker = () => {
             const originalName = filename.substring(0, filename.lastIndexOf('.')) || filename;
             return {
                 name: `${originalName}.webp`,
-                buffer: webpBuffer.toString('base64'),
-                size: webpBuffer.length 
-            }    
+                base64: webpBuffer.toString("base64"),
+                mimeType: "image/webp",
+                size: webpBuffer.length,
+            }
         },
         {
             connection: redisConnection,

@@ -3,6 +3,9 @@ import { Montserrat } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/common/Header";
 import { Toaster } from "@/components/ui/sonner";
+import { Provider } from "react-redux";
+import { store } from "@/store/store";
+import Applayout from "@/layout/layout";
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -27,9 +30,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <Header />
-        <main className="flex-1 py-10">{children}</main>
-        <Toaster />
+        <Applayout>
+          <Header />
+          <main className="flex-1 py-10">{children}</main>
+          <Toaster />
+        </Applayout>
       </body>
     </html>
   );

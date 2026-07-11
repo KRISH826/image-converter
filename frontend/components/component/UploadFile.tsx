@@ -8,6 +8,8 @@ import { FileStatus, FileUploadProps, UploadedFile } from '@/types/upload'
 import { FileImage, Loader2, UploadCloud, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { toast } from 'sonner'
+import { useUploadandConvertImageMutation } from '@/services/conversionApi'
+import DownloadedFile from './DownloadedFile'
 
 const title = 'Submit Your Report'
 const description = 'Attach supporting documents to complete your submission.'
@@ -19,7 +21,7 @@ const ACCEPTED_FILE_TYPES = ['image/jpeg', 'image/png']
 const UploadFile = ({
     title = 'Submit Your Report',
     description = 'Attach supporting documents to complete your submission.',
-    maxFiles = 200,
+    maxFiles = 20,
     maxSizeMB = 150,
     acceptedLabel = 'JPG or PNG, up to',
     submitLabel = 'Convert to WebP',
@@ -30,7 +32,8 @@ const UploadFile = ({
     const [files, setFiles] = useState<UploadedFile[]>([])
     const [isDragging, setIsDragging] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null);
-    const [loading, setIsloading] = useState<Boolean>(false)
+    const [uploadAndConvertImage, { isLoading }] = useUploadandConvertImageMutation();
+    const [resultData, SetresultData] = useState([]);
 
 
     const validateFiles = (file: File) => {
@@ -110,16 +113,29 @@ const UploadFile = ({
         onCancel && onCancel()
     }
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        const validFiles = files.filter((file) => file.status !== 'error')
+        if (validFiles.length === 0) return
+        const formData = new FormData();
+        validFiles.forEach((file) => {
+            formData.append('files', file.file)
+        })
         try {
-            setIsloading(true)
-            const validFiles = files.filter((file) => file.status !== 'error')
-            onSubmit && onSubmit(validFiles)
+            const result = await uploadAndConvertImage(formData).unwrap();
+            toast.success("all DOne")
+            SetresultData(result.data)
+            if(onSubmit) onSubmit(result)
             clearAll()
-            setIsloading(false)
         }
-        catch {
+        catch (error: any) {
+            console.error('Upload component error:', error)
             toast('Something went wrong. Please try again.')
+        }
+    }
+
+    const clearDownload = () => {
+        if(resultData.length > 0) {
+            SetresultData([])
         }
     }
 
@@ -214,14 +230,22 @@ const UploadFile = ({
                         </div>
                     )
                 }
+
+                {/* results-data */}
+                {resultData.length > 0 && <DownloadedFile data={resultData} />}
+
             </CardContent>
             <CardFooter className='flex justify-end items-center gap-2'>
-                <Button size="lg" variant="outline">
-                    Cancel
-                </Button>
-                <Button size="lg" variant="default" onClick={handleSubmit}>
+                {
+                    resultData.length > 0 && (
+                        <Button size="lg" variant="outline" onClick={clearDownload}>
+                            Clear All
+                        </Button>
+                    )
+                }
+                <Button size="lg" variant="default" disabled={!!isLoading || validCount === 0} onClick={handleSubmit}>
                     {
-                        loading ? (
+                        isLoading ? (
                             <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                         ) : (
                             <UploadCloud className="mr-1 h-4 w-4" />

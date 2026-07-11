@@ -135,7 +135,7 @@ const UploadFile = ({
                     </Badge>
                 </div>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4">
+            <CardContent className="flex transition-all duration-500 flex-col gap-4">
                 <div onDrop={handleDrop} onDragLeave={() => setIsDragging(false)}
                     onDragOver={(e) => {
                         e.preventDefault()
@@ -166,7 +166,7 @@ const UploadFile = ({
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
                                         exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.5 }}
+                                        transition={{ duration: 0.3 }}
                                         className="flex items-center gap-3 rounded-md border p-2"
                                     >
                                         {file.preview ? (

@@ -121,7 +121,8 @@ const FolderUpload = ({
         const folder = zip.folder("images");
 
         resultData.forEach((file: Convertedfile) => {
-            folder?.file(file.name, file.base64, { base64: true })
+            const pathZip = file.relativePath || file.name
+            zip.file(pathZip, file.base64, { base64: true })
         })
 
         const zipBlob = await zip.generateAsync({ type: "blob" })

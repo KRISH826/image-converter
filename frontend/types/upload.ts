@@ -42,6 +42,7 @@ export interface FolderSummary {
   jpeg: number
   png: number
   svg: number
+  webp: number
   other: number
 } 
 

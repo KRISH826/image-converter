@@ -1,7 +1,7 @@
 import { redisConnection } from "@/lib/redis";
 import { imageQueue } from "@/workers/queue";
 import { QueueEvents } from "bullmq";
-import { unlink, writeFile } from "fs/promises";
+import { readFile, unlink, writeFile } from "fs/promises";
 import { NextResponse, NextRequest } from "next/server"
 import path from "path";
 import os from "os";
@@ -29,9 +29,11 @@ export async function POST(request: NextRequest) {
             files.map(async (file) => {
                 const arrayBuffer = await file.arrayBuffer();
 
+                const safeName = path.basename(file.name.replace(/\\/g, '/'));
+
                 const tempPath = path.join(
                     os.tmpdir(),
-                    `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${file.name}`
+                    `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`
                 );
                 await writeFile(tempPath, Buffer.from(arrayBuffer));
                 cleanupPaths.push(tempPath);
@@ -45,19 +47,22 @@ export async function POST(request: NextRequest) {
                 const result = await job.waitUntilFinished(queuedEvents);
                 cleanupPaths.push(result.outputPath);
 
+                const outputBuffer = await readFile(result.outputPath);
+                const base64 = outputBuffer.toString("base64");
+
                 return {
                     jobId: job.id,
                     name: result.name,
                     mimeType: result.mimeType,
-                    base64: result.base64,
+                    base64,
                     size: result.size,
                     relativePath: result.relativePath
                 }
             })
         );
 
-         // cleanup — input aur output dono temp files hata do
-        await Promise.all(cleanupPaths.map((p) => unlink(p).catch(() => {})));
+        // cleanup — input aur output dono temp files hata do
+        await Promise.all(cleanupPaths.map((p) => unlink(p).catch(() => { })));
 
         return NextResponse.json({
             success: true,
@@ -66,6 +71,7 @@ export async function POST(request: NextRequest) {
         }, { status: 200 })
     } catch (error) {
         console.error("Conversion API Error:", error);
+        await Promise.all(cleanupPaths.map((p) => unlink(p).catch(() => { })));
         return NextResponse.json({ error: 'Something went wrong during conversion.' }, { status: 500 })
     }
 }

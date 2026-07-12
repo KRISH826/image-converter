@@ -29,8 +29,9 @@ export const conversionImageWorker = () => {
                     effort: 2
                 }).toBuffer()
 
-            const originalName = filename.substring(0, filename.lastIndexOf('.')) || filename;
-            const outPutName = `${originalName}.webp`
+           const safeFilename = path.basename(filename.replace(/\\/g, '/'));
+            const originalName = safeFilename.substring(0, safeFilename.lastIndexOf('.')) || safeFilename;
+            const outPutName = `${originalName}.webp`;
             const outputPath = path.join(
                 os.tmpdir(),
                 `out-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${outPutName}`

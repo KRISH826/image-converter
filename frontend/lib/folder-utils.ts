@@ -38,12 +38,12 @@ export const traverseFiletTree = async (item: FileSystemEntry, path = ''): Promi
 }
 
 export const categorizeFiles = (files: File[]): {categorized: CategorizedFile[], summary: FolderSummary} => {
-    const summary: FolderSummary = {totalfiles: 0, totalsize: 0, jpeg: 0, png: 0, svg: 0, other: 0}
+    const summary: FolderSummary = {totalfiles: 0, totalsize: 0, jpeg: 0, png: 0, svg: 0, webp: 0, other: 0}
 
     const categorized = files.map((file) => {
         const type = getFileType(file)
         summary.totalfiles++
-        summary.totalsize++
+        summary.totalsize += file.size
         if (type === 'webp') {
             summary.other++
         } else {

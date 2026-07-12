@@ -4,7 +4,7 @@ import React, { useCallback, useRef, useState } from 'react'
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
-import { Convertedfile, FileStatus, FileUploadProps, UploadedFile } from '@/types/upload'
+import { CategorizedFile, Convertedfile, FileStatus, FileUploadProps, FolderSummary, UploadedFile } from '@/types/upload'
 import { FileImage, Loader2, UploadCloud, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { toast } from 'sonner'
@@ -12,77 +12,41 @@ import { useUploadandConvertImageMutation } from '@/services/conversionApi'
 import DownloadedFile from './DownloadedFile'
 import ProcessLoading from './ProcessLoading'
 import JSZip from 'jszip'
+import { categorizeFiles } from '@/lib/folder-utils'
 
-const title = 'Submit Your Folder'
-const description = 'Attach supporting documents to complete your submission.'
-const maxFiles = 6
-const maxSizeMB = 25
-const files = 20
-const ACCEPTED_FILE_TYPES = ['image/jpeg', 'image/png']
 
 const FolderUpload = ({
     title = 'Submit Your Folder',
     description = 'Attach supporting documents to complete your submission.',
     maxFiles = 20,
-    maxSizeMB = 150,
+    maxSizeMB = 50,
     acceptedLabel = 'JPG or PNG, up to',
     onSubmit,
     onCancel,
 }: FileUploadProps) => {
     const [files, setFiles] = useState<UploadedFile[]>([])
     const [isDragging, setIsDragging] = useState(false)
+    const [summary, setSummary] = useState<FolderSummary | null>(null)
+    const [categorized, setCategorized] = useState<CategorizedFile[]>([])
     const inputRef = useRef<HTMLInputElement>(null);
     const [uploadAndConvertImage, { isLoading }] = useUploadandConvertImageMutation();
     const [resultData, SetresultData] = useState<Convertedfile[]>([]);
 
+    const processedFiles = (files: File[]) => {
+       const {cateorized, summary} = categorizeFiles(files);
+       if(summary.totalsize > maxSizeMB * 1024 * 1024) return toast(`File size exceeds the limit of ${maxSizeMB}MB. Please try again.`);
 
-    const validateFiles = (file: File) => {
-        if (!ACCEPTED_FILE_TYPES.includes(file.type)) {
-            const message = 'File type not supported. Only JPG and PNG are allowed.'
-            toast(message)
-            return message
-        }
-        if (file.size > maxSizeMB * 1024 * 1024) {
-            const message = `File size exceeds the limit of ${maxSizeMB}MB.`
-            toast(message)
-            return message
-        }
-        return undefined
+       if(summary.totalfiles === 0) {
+            toast("No files found in the folder. Please try again.");
+            return
+       }
+       setCategorized(cateorized);
+       setSummary(summary);
     }
-    const generateId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-
-
-    const addFiles = useCallback(
-        (fileList: FileList | File[]) => {
-            const incoming = Array.from(fileList)
-
-            setFiles((prev) => {
-                const availableSlots = maxFiles - prev.length
-                if (availableSlots <= 0) return prev
-
-                const next: UploadedFile[] = incoming
-                    .slice(0, availableSlots)
-                    .map((file) => {
-                        const fileError = validateFiles(file)
-                        return {
-                            id: generateId(),
-                            file,
-                            progress: 0,
-                            status: (fileError ? 'error' : 'queued') as FileStatus,
-                            preview: URL.createObjectURL(file),
-                            error: fileError,
-                        }
-                    })
-
-                return [...prev, ...next]
-            })
-        },
-        [maxFiles, maxSizeMB]
-    )
 
     const handleBrowse = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files?.length) {
-            addFiles(e.target.files)
+            processedFiles(Array.from(e.target.files))
         }
         e.target.value = ''
     }

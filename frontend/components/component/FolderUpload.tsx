@@ -5,14 +5,15 @@ import { Card, CardContent, CardFooter, CardHeader } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { CategorizedFile, Convertedfile, FileStatus, FileUploadProps, FolderSummary, UploadedFile } from '@/types/upload'
-import { FileImage, Loader2, UploadCloud, X } from 'lucide-react'
+import { FileImage, FolderUp, Loader2, UploadCloud, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { toast } from 'sonner'
 import { useUploadandConvertImageMutation } from '@/services/conversionApi'
 import DownloadedFile from './DownloadedFile'
 import ProcessLoading from './ProcessLoading'
 import JSZip from 'jszip'
-import { categorizeFiles } from '@/lib/folder-utils'
+import { categorizeFiles, traverseFiletTree } from '@/lib/folder-utils'
+import { tryCatch } from 'bullmq'
 
 
 const FolderUpload = ({
@@ -33,15 +34,15 @@ const FolderUpload = ({
     const [resultData, SetresultData] = useState<Convertedfile[]>([]);
 
     const processedFiles = (files: File[]) => {
-       const {cateorized, summary} = categorizeFiles(files);
-       if(summary.totalsize > maxSizeMB * 1024 * 1024) return toast(`File size exceeds the limit of ${maxSizeMB}MB. Please try again.`);
+         const { categorized, summary } = categorizeFiles(files); // typo fix
+        if (summary.totalsize > maxSizeMB * 1024 * 1024) return toast(`File size exceeds the limit of ${maxSizeMB}MB. Please try again.`);
 
-       if(summary.totalfiles === 0) {
+        if (summary.totalfiles === 0) {
             toast("No files found in the folder. Please try again.");
             return
-       }
-       setCategorized(cateorized);
-       setSummary(summary);
+        }
+        setCategorized(categorized);
+        setSummary(summary);
     }
 
     const handleBrowse = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,51 +52,61 @@ const FolderUpload = ({
         e.target.value = ''
     }
 
-    const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    const handleDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault()
         setIsDragging(false)
-        if (e.dataTransfer.files?.length) {
-            addFiles(e.dataTransfer.files)
-        }
-    }
 
-    const removeFile = (id: string) => {
-        setFiles((prev) => {
-            const target = prev.find((file) => file.id === id)
-            if (target?.preview) {
-                URL.revokeObjectURL(target.preview)
-            }
-            return prev.filter((file) => file.id !== id)
-        })
-    }
+        const items = e.dataTransfer.items
+        if (!items) return
 
-    const clearAll = () => {
-        files.forEach((file) => {
-            file.preview && URL.revokeObjectURL(file.preview)
-        })
-        setFiles([])
-        onCancel && onCancel()
-    }
+        const entries = Array.from(items)
+            .map((item) => item.webkitGetAsEntry())
+            .filter((entry): entry is FileSystemEntry => entry !== null)
+
+        const filesNested = await Promise.all(entries.map((entry) => traverseFiletTree(entry)))
+        processedFiles(filesNested.flat())
+    }, [])
 
     const handleSubmit = async () => {
-        clearAll()
-        const validFiles = files.filter((file) => file.status !== 'error')
-        if (validFiles.length === 0) return
-        const formData = new FormData();
-        validFiles.forEach((file) => {
-            formData.append('files', file.file)
-        })
-        try {
-            const result = await uploadAndConvertImage(formData).unwrap();
-            toast.success("all DOne")
-            console.log(result.data)
-            SetresultData(result.data)
-            if (onSubmit) onSubmit(result)
-            clearAll()
+        const toConvert = categorized.filter((f) => f.type === 'jpeg' || f.type === 'png')
+        const passthrough = categorized.filter((f) => f.type !== 'jpeg' && f.type !== 'png')
+
+        if(toConvert.length === 0 && passthrough.length === 0) {
+            toast("No files found in the folder. Please try again.");
+            return
         }
-        catch (error: any) {
-            console.error('Upload component error:', error)
-            toast('Something went wrong. Please try again.')
+        try {
+            let converted:Convertedfile[] = []
+            if(toConvert.length > 0) {
+                const formData = new FormData();
+                const pathMap: Record<string, string> = {}
+                toConvert.forEach((c) => {formData.append('files', c.file)
+                pathMap[c.file.name] = c.relativePath
+                })
+                formData.append('pathMap', JSON.stringify(pathMap))
+                const result = await uploadAndConvertImage(formData).unwrap();
+                converted = result.data
+            }
+
+            const passthroughData: Convertedfile[] = await Promise.all(
+               passthrough.map(async (c) => {
+                    const buffer = await c.file.arrayBuffer()
+                    const base64 = btoa(new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ''))
+                    return {
+                        name: c.file.name,
+                        base64,
+                        mimeType: c.file.type,
+                        size: c.file.size,
+                        relativePath: c.relativePath
+                    }
+                })
+            )
+            
+            SetresultData([...converted, ...passthroughData])
+            toast.success(`Processed: ${toConvert.length} converted, ${passthrough.length} skipped (already optimized).`)
+        } catch (error) {
+            console.error('Folder upload error:', error)
+            toast.error('Something went wrong during folder processing.')
         }
     }
 
@@ -124,10 +135,6 @@ const FolderUpload = ({
         URL.revokeObjectURL(url)
     }
 
-    const validCount = files.filter((f) => f.status !== 'error').length
-    const isFull = files.length >= maxFiles
-
-
     return (
         <Card className="mx-auto w-full shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_2px_-1px_rgba(0,0,0,0.06),0px_2px_4px_0px_rgba(0,0,0,0.04)] ring-0">
             <CardHeader>
@@ -140,9 +147,6 @@ const FolderUpload = ({
                             {description}
                         </p>
                     </div>
-                    <Badge variant="secondary" className="shrink-0 tabular-nums">
-                        {validCount} / {maxFiles}
-                    </Badge>
                 </div>
             </CardHeader>
             <CardContent className="flex transition-all duration-500 flex-col gap-4">
@@ -152,61 +156,28 @@ const FolderUpload = ({
                         setIsDragging(true)
                     }}
                     onClick={() => inputRef.current?.click()}
-                    className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition-colors ${isDragging
+                    className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-8 py-12 text-center transition-colors ${isDragging
                         ? 'border-primary bg-primary/5'
                         : 'border-muted-foreground/25 hover:border-muted-foreground/40'
                         }`}>
-                    <UploadCloud className="text-muted-foreground h-8 w-8" />
-                    <p className="text-sm font-medium">
-                        Drag & drop files here, or click to browse
-                    </p>
-                    <p className="text-muted-foreground text-xs">
-                        {acceptedLabel} {maxSizeMB}MB each
-                    </p>
-                    <input ref={inputRef} type="file" accept="image/jpeg,image/png" multiple className="hidden" onChange={handleBrowse} />
+                    <FolderUp className="text-muted-foreground h-8 w-8" />
+                    <p className="text-sm font-medium">Drag & drop a folder here, or click to browse</p>
+                    <input ref={inputRef} type="file" // @ts-ignore - webkitdirectory not in default TS types
+                        webkitdirectory=""
+                        directory=""
+                        multiple className="hidden" onChange={handleBrowse} />
                 </div>
 
-                {
-                    files.length > 0 && (
-                        <div className="flex flex-col flex-1 scroll-fade scroll-smooth scrollbar-none max-h-100 overflow-auto gap-2">
-                            <AnimatePresence initial={false}>
-                                {files.map((file) => (
-                                    <motion.div
-                                        key={file.id}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
-                                        transition={{ duration: 0.3 }}
-                                        className="flex items-center gap-3 rounded-md border p-2"
-                                    >
-                                        <FileImage className="text-muted-foreground h-5 text-indigo-300 w-5" />
-
-                                        <div className="flex min-w-0 flex-1 flex-col">
-                                            <span className="truncate text-sm font-medium">
-                                                {file.file.name}
-                                            </span>
-                                            <span className="text-muted-foreground text-xs">
-                                                {(file.file.size / (1024 * 1024)).toFixed(2)} MB
-                                            </span>
-                                            {file.error && (
-                                                <span className="text-xs text-red-500">{file.error}</span>
-                                            )}
-                                        </div>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => removeFile(file.id)}
-                                            className="text-muted-foreground hover:text-foreground ml-auto shrink-0 rounded-sm p-1 transition-colors"
-                                            aria-label={`Remove ${file.file.name}`}
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </button>
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
-                        </div>
-                    )
-                }
+                {summary && (
+                    <div className="flex flex-wrap gap-2">
+                        <Badge variant="secondary">Total: {summary.totalfiles} files ({(summary.totalsize / 1024 / 1024).toFixed(1)}MB)</Badge>
+                        {summary.jpeg > 0 && <Badge>{summary.jpeg} JPEG</Badge>}
+                        {summary.png > 0 && <Badge>{summary.png} PNG</Badge>}
+                        {/* {summary.webp > 0 && <Badge variant="outline">{summary.webp} WebP (skip)</Badge>} */}
+                        {summary.svg > 0 && <Badge variant="outline">{summary.svg} SVG (skip)</Badge>}
+                        {summary.other > 0 && <Badge variant="destructive">{summary.other} unsupported</Badge>}
+                    </div>
+                )}
 
                 {/* results-data */}
                 {
@@ -233,7 +204,7 @@ const FolderUpload = ({
                     )
                 }
 
-                <Button size="lg" variant="default" disabled={!!isLoading || validCount === 0} onClick={handleSubmit}>
+                <Button size="lg" variant="default" disabled={!!isLoading || !summary} onClick={handleSubmit}>
                     {
                         isLoading ? (
                             <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Processing</>

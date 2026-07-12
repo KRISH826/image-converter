@@ -29,6 +29,8 @@ export async function POST(request: NextRequest) {
                 })
 
                 const result = await job.waitUntilFinished(queuedEvents);
+                const pathMapRaw = formData.get('pathMap') as string
+                const pathMap: Record<string, string> = pathMapRaw ? JSON.parse(pathMapRaw) : {}
 
                 return {
                     jobId: job.id,
@@ -36,6 +38,9 @@ export async function POST(request: NextRequest) {
                     mimeType: result.mimeType,
                     base64: result.base64,
                     size: result.size,
+                    relativePath: pathMap[file.name]
+                        ? pathMap[file.name].replace(/\.[^/.]+$/, '.webp')
+                        : result.name,
                 }
             })
         );

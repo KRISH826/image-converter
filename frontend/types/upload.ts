@@ -26,12 +26,14 @@ export interface Convertedfile {
   base64: string
   mimeType: string
   size: number
+  relativePath?: string
 }
 
 export interface CategorizedFile {
+  relativePath: string;
   file: File
   path: string
-  type: 'jpeg' | 'png' | 'webp' | 'svg' | 'other'
+  type: 'jpeg' | 'png' | 'webp' | 'svg' | 'webp' | 'other'
 }
 
 export interface FolderSummary {

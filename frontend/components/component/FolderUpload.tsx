@@ -13,15 +13,15 @@ import DownloadedFile from './DownloadedFile'
 import ProcessLoading from './ProcessLoading'
 import JSZip from 'jszip'
 
-const title = 'Submit Your Report'
+const title = 'Submit Your Folder'
 const description = 'Attach supporting documents to complete your submission.'
 const maxFiles = 6
 const maxSizeMB = 25
 const files = 20
 const ACCEPTED_FILE_TYPES = ['image/jpeg', 'image/png']
 
-const UploadFile = ({
-    title = 'Submit Your Report',
+const FolderUpload = ({
+    title = 'Submit Your Folder',
     description = 'Attach supporting documents to complete your submission.',
     maxFiles = 20,
     maxSizeMB = 150,
@@ -114,6 +114,7 @@ const UploadFile = ({
     }
 
     const handleSubmit = async () => {
+        clearAll()
         const validFiles = files.filter((file) => file.status !== 'error')
         if (validFiles.length === 0) return
         const formData = new FormData();
@@ -285,4 +286,4 @@ const UploadFile = ({
     )
 }
 
-export default UploadFile
+export default FolderUpload

@@ -2,11 +2,10 @@ import { redisConnection } from "@/lib/redis";
 import { imageQueue } from "@/workers/queue";
 import { QueueEvents } from "bullmq";
 import { NextResponse, NextRequest } from "next/server"
-import sharp from "sharp"
 
 
 const queuedEvents = new QueueEvents("image-conversion", { connection: redisConnection });
-
+queuedEvents.setMaxListeners(20); // 0 = unlimited, warning gayab
 
 export async function POST(request: NextRequest) {
     try {

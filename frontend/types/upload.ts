@@ -27,3 +27,19 @@ export interface Convertedfile {
   mimeType: string
   size: number
 }
+
+export interface CategorizedFile {
+  file: File
+  path: string
+  type: 'jpeg' | 'png' | 'webp' | 'svg' | 'other'
+}
+
+export interface FolderSummary {
+  totalfiles: number
+  totalsize: number
+  jpeg: number
+  png: number
+  svg: number
+  other: number
+} 
+

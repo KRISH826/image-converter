@@ -15,7 +15,7 @@ const DownloadedFile = ({data}: props) => {
         link.click()
     }
     return (
-        <div className='flex flex-col gap-2.5'>
+        <div className='flex flex-col gap-2.5 scroll-fade scroll-smooth scrollbar-none max-h-100 overflow-auto'>
             {data.map((file, index) => (
                 <motion.div
                     key={`${file.name}-${index}`}
@@ -25,11 +25,7 @@ const DownloadedFile = ({data}: props) => {
                     transition={{ duration: 0.3 }}
                     className="flex items-center gap-3 rounded-md border p-2"
                 >
-                    <img
-                        src={`data:${file.mimeType};base64,${file.base64}`}
-                        alt={file.name}
-                        className="h-10 w-10 rounded object-cover"
-                    />
+                    <FileImage className="h-5 text-indigo-300 w-5" />
                     <div className="flex min-w-0 flex-1 flex-col">
                         <span className="truncate text-sm font-medium">{file.name}</span>
                         <span className="text-muted-foreground text-xs">

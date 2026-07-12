@@ -4,12 +4,14 @@ import React, { useCallback, useRef, useState } from 'react'
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
-import { FileStatus, FileUploadProps, UploadedFile } from '@/types/upload'
+import { Convertedfile, FileStatus, FileUploadProps, UploadedFile } from '@/types/upload'
 import { FileImage, Loader2, UploadCloud, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { toast } from 'sonner'
 import { useUploadandConvertImageMutation } from '@/services/conversionApi'
 import DownloadedFile from './DownloadedFile'
+import ProcessLoading from './ProcessLoading'
+import JSZip from 'jszip'
 
 const title = 'Submit Your Report'
 const description = 'Attach supporting documents to complete your submission.'
@@ -24,8 +26,6 @@ const UploadFile = ({
     maxFiles = 20,
     maxSizeMB = 150,
     acceptedLabel = 'JPG or PNG, up to',
-    submitLabel = 'Convert to WebP',
-    cancelLabel = 'Clear all',
     onSubmit,
     onCancel,
 }: FileUploadProps) => {
@@ -33,7 +33,7 @@ const UploadFile = ({
     const [isDragging, setIsDragging] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null);
     const [uploadAndConvertImage, { isLoading }] = useUploadandConvertImageMutation();
-    const [resultData, SetresultData] = useState([]);
+    const [resultData, SetresultData] = useState<Convertedfile[]>([]);
 
 
     const validateFiles = (file: File) => {
@@ -123,8 +123,9 @@ const UploadFile = ({
         try {
             const result = await uploadAndConvertImage(formData).unwrap();
             toast.success("all DOne")
+            console.log(result.data)
             SetresultData(result.data)
-            if(onSubmit) onSubmit(result)
+            if (onSubmit) onSubmit(result)
             clearAll()
         }
         catch (error: any) {
@@ -134,9 +135,28 @@ const UploadFile = ({
     }
 
     const clearDownload = () => {
-        if(resultData.length > 0) {
+        if (resultData.length > 0) {
             SetresultData([])
         }
+    }
+
+    const downloadZip = async () => {
+        const zip = new JSZip();
+        const folder = zip.folder("images");
+
+        resultData.forEach((file: Convertedfile) => {
+            folder?.file(file.name, file.base64, { base64: true })
+        })
+
+        const zipBlob = await zip.generateAsync({ type: "blob" })
+        const url = URL.createObjectURL(zipBlob)
+
+        const link = document.createElement('a')
+        link.href = url
+        link.download = "images.zip"
+        link.click()
+
+        URL.revokeObjectURL(url)
     }
 
     const validCount = files.filter((f) => f.status !== 'error').length
@@ -183,7 +203,7 @@ const UploadFile = ({
 
                 {
                     files.length > 0 && (
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col flex-1 scroll-fade scroll-smooth scrollbar-none max-h-100 overflow-auto gap-2">
                             <AnimatePresence initial={false}>
                                 {files.map((file) => (
                                     <motion.div
@@ -194,15 +214,7 @@ const UploadFile = ({
                                         transition={{ duration: 0.3 }}
                                         className="flex items-center gap-3 rounded-md border p-2"
                                     >
-                                        {file.preview ? (
-                                            <img
-                                                src={file.preview}
-                                                alt={file.file.name}
-                                                className="h-10 w-10 rounded object-cover"
-                                            />
-                                        ) : (
-                                            <FileImage className="text-muted-foreground h-10 w-10" />
-                                        )}
+                                        <FileImage className="text-muted-foreground h-5 text-indigo-300 w-5" />
 
                                         <div className="flex min-w-0 flex-1 flex-col">
                                             <span className="truncate text-sm font-medium">
@@ -232,26 +244,41 @@ const UploadFile = ({
                 }
 
                 {/* results-data */}
-                {resultData.length > 0 && <DownloadedFile data={resultData} />}
+                {
+                    isLoading ? <ProcessLoading /> : <>
+                        {resultData.length > 0 && <DownloadedFile data={resultData} />}
+                    </>
+                }
 
             </CardContent>
             <CardFooter className='flex justify-end items-center gap-2'>
                 {
+                    resultData.length > 1 && (
+                        <Button size="lg" variant="outline" onClick={downloadZip}>
+                            Download All
+                        </Button>
+                    )
+                }
+
+                {
                     resultData.length > 0 && (
-                        <Button size="lg" variant="outline" onClick={clearDownload}>
+                        <Button size="lg" variant="destructive" onClick={clearDownload}>
                             Clear All
                         </Button>
                     )
                 }
+
                 <Button size="lg" variant="default" disabled={!!isLoading || validCount === 0} onClick={handleSubmit}>
                     {
                         isLoading ? (
-                            <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                            <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Processing</>
                         ) : (
-                            <UploadCloud className="mr-1 h-4 w-4" />
+                            <>
+                                <UploadCloud className="mr-1 h-4 w-4" /> Submit
+                            </>
                         )
                     }
-                    Submit
+
                 </Button>
             </CardFooter>
         </Card>

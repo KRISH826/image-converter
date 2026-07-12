@@ -11,11 +11,11 @@ export const imageQueue = new Queue("image-conversion", {
             delay: 1500,
         },
         removeOnComplete:{
-            age: 1800,
-            count: 100
+            age: 300,
+            count: 60
         },
         removeOnFail: {
-            age: 86400
+            age: 300
         }
     }
 })

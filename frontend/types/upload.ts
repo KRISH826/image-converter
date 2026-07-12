@@ -26,4 +26,23 @@ export interface Convertedfile {
   base64: string
   mimeType: string
   size: number
+  relativePath?: string
 }
+
+export interface CategorizedFile {
+  relativePath: string;
+  file: File
+  path: string
+  type: 'jpeg' | 'png' | 'webp' | 'svg' | 'webp' | 'other'
+}
+
+export interface FolderSummary {
+  totalfiles: number
+  totalsize: number
+  jpeg: number
+  png: number
+  svg: number
+  webp: number
+  other: number
+} 
+

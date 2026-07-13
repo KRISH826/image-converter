@@ -6,7 +6,7 @@
     "dev": "concurrently \"next dev\" \"tsx workers/index.ts\"",
     "worker": "tsx src/workers/index.ts",
     "build": "next build",
-    "start": "concurrently \"next start\" \"node dist/workers/index.js\"",
+    "start": "concurrently \"next start\" \"tsx workers/index.ts\"",
     "lint": "eslint"
   },
   "dependencies": {

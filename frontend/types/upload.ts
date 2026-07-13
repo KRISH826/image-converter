@@ -31,8 +31,7 @@ export interface Convertedfile {
 
 export interface CategorizedFile {
   relativePath: string;
-  file: File
-  path: string
+  file: File,
   type: 'jpeg' | 'png' | 'webp' | 'svg' | 'webp' | 'other'
 }
 

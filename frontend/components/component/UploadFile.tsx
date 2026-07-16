@@ -128,8 +128,11 @@ const UploadFile = ({
             clearAll()
         }
         catch (error: any) {
-            console.error('Upload component error:', error)
-            toast('Something went wrong. Please try again.')
+            console.error("========== CLIENT ERROR ==========");
+            console.dir(error, { depth: null });
+
+            console.log("Status:", error?.status);
+            console.log("Data:", error?.data);
         }
     }
 

@@ -4,17 +4,31 @@ import { QueueEvents } from "bullmq";
 import { redisConnection } from "@/lib/redis";
 import { uploadBufferToCloudinary } from "@/lib/cloudinary";
 
-const queuedEvents = new QueueEvents("image-conversion", { connection: redisConnection });
-queuedEvents.setMaxListeners(100);
+declare global {
+    var queueEvents: QueueEvents | undefined;
+}
+
+export const queuedEvents =
+    global.queueEvents ??
+    new QueueEvents("image-conversion", {
+        connection: redisConnection,
+    });
+
+if (!global.queueEvents) {
+    global.queueEvents = queuedEvents;
+}
+queuedEvents.setMaxListeners(0);
 
 export async function POST(request: NextRequest) {
     try {
         const formData = await request.formData();
-        const files = formData.getAll("files") as File[];
+        const files = (formData.getAll("files") as File[]).filter(
+            (f) => f instanceof File && f.name && f.name.trim() !== '' && f.size > 0
+        );
         const pathMapRaw = formData.get('pathMap') as string;
         const pathMap: Record<string, string> = pathMapRaw ? JSON.parse(pathMapRaw) : {};
 
-        if (!files || files.length === 0) {
+        if (files.length === 0) {
             return NextResponse.json({ error: 'No files provided for conversion.' }, { status: 400 });
         }
 
@@ -55,9 +69,9 @@ export async function POST(request: NextRequest) {
         }, { status: 200 });
 
     } catch (error: any) {
-        console.error("Conversion API Error:", error);
+        console.error("Conversion API Error:", error?.stack || error);
         return NextResponse.json(
-            { error: error?.message || 'Something went wrong during conversion.' }, 
+            { error: error?.message || 'Something went wrong during conversion.' },
             { status: 500 }
         );
     }

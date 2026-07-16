@@ -4,7 +4,7 @@ import { redisConnection } from "@/lib/redis";
 import path from "path";
 import { uploadBufferToCloudinary, deleteFromCloudinary } from "@/lib/cloudinary";
 // IMPORT YOUR QUEUE HERE so we can add delayed cleanup jobs
-import { imageQueue } from "@/workers/queue"; 
+import { imageQueue } from "@/workers/queue";
 
 interface ConversionDto {
     type: "convert";
@@ -32,43 +32,44 @@ export const conversionImageWorker = () => {
             }
             const { filename, sourceUrl, sourcePublicId, relativePath } = job.data;
 
+            if (!filename || typeof filename !== 'string' || filename.trim() === '') {
+                console.error(`[Job ${job.id}] Invalid filename received:`, JSON.stringify(job.data));
+                throw new Error(`Invalid filename for job ${job.id}: received "${filename}"`);
+            }
+
             const response = await fetch(sourceUrl);
             const buffer = Buffer.from(await response.arrayBuffer());
 
             // 2. Convert using Sharp (effort: 1 makes it lighting fast)
             const webpBuffer = await sharp(buffer)
                 .resize({ width: 1920, withoutEnlargement: true, fit: 'inside', kernel: 'linear' })
-                .webp({ quality: 30, effort: 1 }) 
+                .webp({ quality: 30, effort: 1 })
                 .toBuffer();
-
-            // 3. Upload WebP to Cloudinary
+                
             const finalUpload = await uploadBufferToCloudinary(webpBuffer, "converted-webps");
+            await deleteFromCloudinary(sourcePublicId).catch(() => { });
 
-            // 4. INSTANT CLEANUP: Delete original upload immediately (saves space!)
-            await deleteFromCloudinary(sourcePublicId).catch(() => {});
-
-            // 5. SCHEDULED CLEANUP: Tell BullMQ to delete the WebP after 15 mins
             await imageQueue.add("cleanup-job", {
                 type: "cleanup",
                 publicId: finalUpload.public_id
-            }, { 
+            }, {
                 delay: 15 * 60 * 1000 // 15 minutes in milliseconds
             });
 
             // 6. Return Data
-            const safeFilename = path.basename(filename.replace(/\\/g, '/'));
+            const safeFilename = path.basename((filename || 'converted-image').replace(/\\/g, '/'));
             const originalName = safeFilename.substring(0, safeFilename.lastIndexOf('.')) || safeFilename;
 
             return {
                 name: `${originalName}.webp`,
                 outputUrl: finalUpload.secure_url,
-                size: webpBuffer.length,
+                size: Buffer.byteLength(webpBuffer),
                 relativePath: relativePath ? relativePath.replace(/\.[^/.]+$/, '.webp') : `${originalName}.webp`,
             };
         },
         {
             connection: redisConnection,
-            concurrency: 6
+            concurrency: 2
         }
     );
 };

@@ -1,64 +1,74 @@
-import { Worker, Job } from "bullmq"
-import sharp from "sharp"
-import { redisConnection } from "@/lib/redis"
-import path from "path"
-import os from "os"
-import { readFile, unlink, writeFile } from "fs/promises"
+import { Worker, Job } from "bullmq";
+import sharp from "sharp";
+import { redisConnection } from "@/lib/redis";
+import path from "path";
+import { uploadBufferToCloudinary, deleteFromCloudinary } from "@/lib/cloudinary";
+// IMPORT YOUR QUEUE HERE so we can add delayed cleanup jobs
+import { imageQueue } from "@/workers/queue"; 
 
-interface conversionDto {
-    filename: string
-    filePath: string
-    relativePath?: string
+interface ConversionDto {
+    type: "convert";
+    filename: string;
+    sourceUrl: string;
+    sourcePublicId: string;
+    relativePath?: string;
 }
+
+interface CleanupDto {
+    type: "cleanup";
+    publicId: string;
+}
+
+type JobData = ConversionDto | CleanupDto;
 
 export const conversionImageWorker = () => {
     return new Worker(
         "image-conversion",
-        async (job: Job<conversionDto>) => {
-            const { filename, filePath, relativePath } = job.data;
-            
-            // 1. Read the file
-            const buffer = await readFile(filePath);
+        async (job: Job<JobData>) => {
+            if (!job.data) return { error: "No data provided" };
+            if (job.data.type === "cleanup") {
+                await deleteFromCloudinary(job.data.publicId);
+                return { deleted: true, publicId: job.data.publicId };
+            }
+            const { filename, sourceUrl, sourcePublicId, relativePath } = job.data;
 
-            // 2. Convert using sharp
+            const response = await fetch(sourceUrl);
+            const buffer = Buffer.from(await response.arrayBuffer());
+
+            // 2. Convert using Sharp (effort: 1 makes it lighting fast)
             const webpBuffer = await sharp(buffer)
-                .resize({
-                    width: 1920,
-                    withoutEnlargement: true,
-                    fit: 'inside',
-                    kernel: 'linear'
-                }).webp({
-                    quality: 30,
-                    effort: 2
-                }).toBuffer();
+                .resize({ width: 1920, withoutEnlargement: true, fit: 'inside', kernel: 'linear' })
+                .webp({ quality: 30, effort: 1 }) 
+                .toBuffer();
 
+            // 3. Upload WebP to Cloudinary
+            const finalUpload = await uploadBufferToCloudinary(webpBuffer, "converted-webps");
+
+            // 4. INSTANT CLEANUP: Delete original upload immediately (saves space!)
+            await deleteFromCloudinary(sourcePublicId).catch(() => {});
+
+            // 5. SCHEDULED CLEANUP: Tell BullMQ to delete the WebP after 15 mins
+            await imageQueue.add("cleanup-job", {
+                type: "cleanup",
+                publicId: finalUpload.public_id
+            }, { 
+                delay: 15 * 60 * 1000 // 15 minutes in milliseconds
+            });
+
+            // 6. Return Data
             const safeFilename = path.basename(filename.replace(/\\/g, '/'));
             const originalName = safeFilename.substring(0, safeFilename.lastIndexOf('.')) || safeFilename;
-            const outPutName = `${originalName}.webp`;
-            const outputPath = path.join(
-                os.tmpdir(),
-                `out-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${outPutName}`
-            );
-
-            // FIX 1: CRITICAL - You MUST await this write operation
-            await writeFile(outputPath, webpBuffer);
-            
-            // FIX 2: Only delete the input file now that the output is safely written
-            await unlink(filePath).catch(() => { });
 
             return {
                 name: `${originalName}.webp`,
-                mimeType: "image/webp",
+                outputUrl: finalUpload.secure_url,
                 size: webpBuffer.length,
-                outputPath,
-                relativePath: relativePath
-                    ? relativePath.replace(/\.[^/.]+$/, '.webp')
-                    : outPutName,
+                relativePath: relativePath ? relativePath.replace(/\.[^/.]+$/, '.webp') : `${originalName}.webp`,
             };
         },
         {
             connection: redisConnection,
-            concurrency: 3
+            concurrency: 6
         }
     );
 };

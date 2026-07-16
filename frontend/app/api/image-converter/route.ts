@@ -1,77 +1,64 @@
-import { redisConnection } from "@/lib/redis";
+import { NextResponse, NextRequest } from "next/server";
 import { imageQueue } from "@/workers/queue";
 import { QueueEvents } from "bullmq";
-import { readFile, unlink, writeFile } from "fs/promises";
-import { NextResponse, NextRequest } from "next/server"
-import path from "path";
-import os from "os";
-
+import { redisConnection } from "@/lib/redis";
+import { uploadBufferToCloudinary } from "@/lib/cloudinary";
 
 const queuedEvents = new QueueEvents("image-conversion", { connection: redisConnection });
-queuedEvents.setMaxListeners(70); // 0 = unlimited, warning gayab
+queuedEvents.setMaxListeners(100);
 
 export async function POST(request: NextRequest) {
-    const cleanupPaths: string[] = [];
     try {
         const formData = await request.formData();
         const files = formData.getAll("files") as File[];
-        const pathMapRaw = formData.get('pathMap') as string
-        const pathMap: Record<string, string> = pathMapRaw ? JSON.parse(pathMapRaw) : {}
+        const pathMapRaw = formData.get('pathMap') as string;
+        const pathMap: Record<string, string> = pathMapRaw ? JSON.parse(pathMapRaw) : {};
 
         if (!files || files.length === 0) {
-            return NextResponse.json(
-                { error: 'No files provided for coversion.' },
-                { status: 400 }
-            )
+            return NextResponse.json({ error: 'No files provided for conversion.' }, { status: 400 });
         }
 
-        const processedFile = await Promise.all(
+        const processedFiles = await Promise.all(
             files.map(async (file) => {
-                const arrayBuffer = await file.arrayBuffer();
+                const buffer = Buffer.from(await file.arrayBuffer());
 
-                const safeName = path.basename(file.name.replace(/\\/g, '/'));
+                // 1. Upload original file directly to Cloudinary
+                const uploadResult = await uploadBufferToCloudinary(buffer, "temp-originals");
 
-                const tempPath = path.join(
-                    os.tmpdir(),
-                    `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`
-                );
-                await writeFile(tempPath, Buffer.from(arrayBuffer));
-                cleanupPaths.push(tempPath);
-
+                // 2. Add to BullMQ Queue
                 const job = await imageQueue.add("image-conversion", {
+                    type: "convert",
                     filename: file.name,
-                    filePath: tempPath,
+                    sourceUrl: uploadResult.secure_url,
+                    sourcePublicId: uploadResult.public_id,
                     relativePath: pathMap[file.name] || file.name
-                })
+                });
 
+                // 3. Wait for worker to finish and return the URL
                 const result = await job.waitUntilFinished(queuedEvents);
-                cleanupPaths.push(result.outputPath);
-
-                const outputBuffer = await readFile(result.outputPath);
-                const base64 = outputBuffer.toString("base64");
 
                 return {
                     jobId: job.id,
                     name: result.name,
-                    mimeType: result.mimeType,
-                    base64,
+                    mimeType: "image/webp",
+                    url: result.outputUrl, // Send Cloudinary URL to browser instead of massive Base64
                     size: result.size,
                     relativePath: result.relativePath
-                }
+                };
             })
         );
 
-        // cleanup — input aur output dono temp files hata do
-        await Promise.all(cleanupPaths.map((p) => unlink(p).catch(() => { })));
-
         return NextResponse.json({
             success: true,
-            message: `Successfully Converted ${files.length} file(s) to WebP.`,
-            data: processedFile
-        }, { status: 200 })
-    } catch (error) {
+            message: `Successfully Converted ${files.length} file(s) to WebP. Links valid for 15 minutes!`,
+            data: processedFiles
+        }, { status: 200 });
+
+    } catch (error: any) {
         console.error("Conversion API Error:", error);
-        await Promise.all(cleanupPaths.map((p) => unlink(p).catch(() => { })));
-        return NextResponse.json({ error: 'Something went wrong during conversion.' }, { status: 500 })
+        return NextResponse.json(
+            { error: error?.message || 'Something went wrong during conversion.' }, 
+            { status: 500 }
+        );
     }
 }

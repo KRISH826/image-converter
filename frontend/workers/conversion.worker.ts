@@ -25,11 +25,22 @@ export const conversionImageWorker = () => {
     return new Worker(
         "image-conversion",
         async (job: Job<JobData>) => {
-            if (!job.data) return { error: "No data provided" };
+            if (!job.data || typeof job.data !== "object") {
+                throw new Error(`Job ${job.id} has no valid data`);
+            }
+
             if (job.data.type === "cleanup") {
+                if (!job.data.publicId) {
+                    throw new Error(`Cleanup job ${job.id} is missing publicId`);
+                }
                 await deleteFromCloudinary(job.data.publicId);
                 return { deleted: true, publicId: job.data.publicId };
             }
+
+            if (job.data.type !== "convert") {
+                throw new Error(`Job ${job.id} has an unsupported type`);
+            }
+
             const { filename, sourceUrl, sourcePublicId, relativePath } = job.data;
 
             if (!filename || typeof filename !== 'string' || filename.trim() === '') {
@@ -38,6 +49,9 @@ export const conversionImageWorker = () => {
             }
 
             const response = await fetch(sourceUrl);
+            if (!response.ok) {
+                throw new Error(`Unable to download source image (${response.status})`);
+            }
             const buffer = Buffer.from(await response.arrayBuffer());
 
             // 2. Convert using Sharp (effort: 1 makes it lighting fast)

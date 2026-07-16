@@ -4,6 +4,7 @@ import { QueueEvents } from "bullmq";
 import { redisConnection } from "@/lib/redis";
 import { uploadBufferToCloudinary } from "@/lib/cloudinary";
 
+
 declare global {
     var queueEvents: QueueEvents | undefined;
 }
@@ -38,6 +39,10 @@ export async function POST(request: NextRequest) {
 
                 // 1. Upload original file directly to Cloudinary
                 const uploadResult = await uploadBufferToCloudinary(buffer, "temp-originals");
+
+                if (!uploadResult?.secure_url || !uploadResult?.public_id) {
+                    throw new Error(`Cloudinary did not return metadata for ${file.name}`);
+                }
 
                 // 2. Add to BullMQ Queue
                 const job = await imageQueue.add("image-conversion", {

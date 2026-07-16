@@ -15,7 +15,7 @@ const baseQuery = fetchBaseQuery({
 
         return headers
     }
-})
+});
 
 const baseQueryWithGlobalErrorHandler: BaseQueryFn<string | FetchArgs, unknown, FetchBaseQueryError> = async (args, api, extraOptions) => {
     const result = await baseQuery(args, api, extraOptions);

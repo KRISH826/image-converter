@@ -23,7 +23,8 @@ export interface FileUploadProps {
 
 export interface Convertedfile {
   name: string
-  base64: string
+  url?: string
+  base64?: string
   mimeType: string
   size: number
   relativePath?: string

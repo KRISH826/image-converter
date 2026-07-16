@@ -4,13 +4,29 @@ import { QueueEvents } from "bullmq";
 import { redisConnection } from "@/lib/redis";
 import { uploadBufferToCloudinary } from "@/lib/cloudinary";
 
-const queuedEvents = new QueueEvents("image-conversion", { connection: redisConnection });
-queuedEvents.setMaxListeners(100);
+declare global {
+    var queueEvents: QueueEvents | undefined;
+}
+
+export const queuedEvents =
+    global.queueEvents ??
+    new QueueEvents("image-conversion", {
+        connection: redisConnection,
+    });
+
+if (!global.queueEvents) {
+    global.queueEvents = queuedEvents;
+}
+queuedEvents.setMaxListeners(0);
 
 export async function POST(request: NextRequest) {
     try {
         const formData = await request.formData();
-        const files = formData.getAll("files") as File[];
+        const files = formData.getAll("files").filter((value): value is File =>
+            typeof value !== "string" &&
+            typeof value.name === "string" &&
+            typeof value.arrayBuffer === "function"
+        );
         const pathMapRaw = formData.get('pathMap') as string;
         const pathMap: Record<string, string> = pathMapRaw ? JSON.parse(pathMapRaw) : {};
 
@@ -24,6 +40,10 @@ export async function POST(request: NextRequest) {
 
                 // 1. Upload original file directly to Cloudinary
                 const uploadResult = await uploadBufferToCloudinary(buffer, "temp-originals");
+
+                if (!uploadResult?.secure_url || !uploadResult?.public_id) {
+                    throw new Error(`Cloudinary did not return metadata for ${file.name}`);
+                }
 
                 // 2. Add to BullMQ Queue
                 const job = await imageQueue.add("image-conversion", {
@@ -55,9 +75,15 @@ export async function POST(request: NextRequest) {
         }, { status: 200 });
 
     } catch (error: any) {
-        console.error("Conversion API Error:", error);
+        console.error("========== SERVER ERROR ==========");
+        console.error(error);
+        console.error(error?.stack);
+
         return NextResponse.json(
-            { error: error?.message || 'Something went wrong during conversion.' }, 
+            {
+                error: error?.message,
+                stack: error?.stack
+            },
             { status: 500 }
         );
     }

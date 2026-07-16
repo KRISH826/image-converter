@@ -16,8 +16,11 @@ export const conversionImageWorker = () => {
         "image-conversion",
         async (job: Job<conversionDto>) => {
             const { filename, filePath, relativePath } = job.data;
+            
+            // 1. Read the file
             const buffer = await readFile(filePath);
 
+            // 2. Convert using sharp
             const webpBuffer = await sharp(buffer)
                 .resize({
                     width: 1920,
@@ -27,17 +30,22 @@ export const conversionImageWorker = () => {
                 }).webp({
                     quality: 30,
                     effort: 2
-                }).toBuffer()
+                }).toBuffer();
 
-           const safeFilename = path.basename(filename.replace(/\\/g, '/'));
+            const safeFilename = path.basename(filename.replace(/\\/g, '/'));
             const originalName = safeFilename.substring(0, safeFilename.lastIndexOf('.')) || safeFilename;
             const outPutName = `${originalName}.webp`;
             const outputPath = path.join(
                 os.tmpdir(),
                 `out-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${outPutName}`
             );
-            writeFile(outputPath, webpBuffer);
+
+            // FIX 1: CRITICAL - You MUST await this write operation
+            await writeFile(outputPath, webpBuffer);
+            
+            // FIX 2: Only delete the input file now that the output is safely written
             await unlink(filePath).catch(() => { });
+
             return {
                 name: `${originalName}.webp`,
                 mimeType: "image/webp",
@@ -46,11 +54,11 @@ export const conversionImageWorker = () => {
                 relativePath: relativePath
                     ? relativePath.replace(/\.[^/.]+$/, '.webp')
                     : outPutName,
-            }
+            };
         },
         {
             connection: redisConnection,
             concurrency: 3
         }
-    )
-}
+    );
+};

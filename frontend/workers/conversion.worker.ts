@@ -11,6 +11,23 @@ interface conversionDto {
     relativePath?: string
 }
 
+const OUTPUT_TTL_MS = 15 * 60 * 1000;
+const pendingCleanUp = new Map<string, number>();
+
+const scheduleCleanUp = (outputPath:string) => {
+    pendingCleanUp.set(outputPath, Date.now() + OUTPUT_TTL_MS);
+}
+
+setInterval(async () => {
+    const now = Date.now();
+    for (const [filePath, deleteAt] of pendingCleanUp.entries()) {
+        if (now >= deleteAt) {
+            await unlink(filePath).catch(() => { });
+            pendingCleanUp.delete(filePath);
+        }
+    }
+}, 2*60*1000);
+
 export const conversionImageWorker = () => {
     return new Worker(
         "image-conversion",
@@ -36,8 +53,10 @@ export const conversionImageWorker = () => {
                 os.tmpdir(),
                 `out-${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${outPutName}`
             );
-            writeFile(outputPath, webpBuffer);
+            await writeFile(outputPath, webpBuffer);
             await unlink(filePath).catch(() => { });
+            scheduleCleanUp(outputPath);
+            
             return {
                 name: `${originalName}.webp`,
                 mimeType: "image/webp",

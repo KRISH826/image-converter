@@ -122,7 +122,7 @@ const UploadFile = ({
         })
         try {
             const result = await uploadAndConvertImage(formData).unwrap();
-            toast.success(`${files.length} ${files.length > 1 ? 'images' : 'image'} images Converted Successfully`)
+            toast.success(`${files.length} ${files.length > 1 ? 'images' : 'image'} Converted Successfully`)
             SetresultData(result.data)
             if (onSubmit) onSubmit(result)
             clearAll()

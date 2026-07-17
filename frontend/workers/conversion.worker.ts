@@ -50,7 +50,7 @@ export const conversionImageWorker = () => {
         },
         {
             connection: redisConnection,
-            concurrency: 3
+            concurrency: 4
         }
     )
 }

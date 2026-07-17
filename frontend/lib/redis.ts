@@ -1,9 +1,8 @@
 import { ConnectionOptions } from 'bullmq';
 import IORedis from 'ioredis';
 import dotenv from 'dotenv';
-import path from 'path';
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config();
 
 console.log(process.env.REDIS_HOST, process.env.REDIS_PORT)
 

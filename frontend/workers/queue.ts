@@ -4,7 +4,11 @@ import { Queue } from "bullmq";
 export const imageQueue = new Queue("image-conversion", {
     connection: sharedRedisClient as any,
     defaultJobOptions: {
-        attempts: 1, 
+        attempts: 3,
+        backoff: {
+            type: "exponential",
+            delay: 1500
+        },
         removeOnComplete: {
             age: 300,
             count: 60

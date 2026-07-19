@@ -1,5 +1,7 @@
 import { Button } from '../ui/button'
 import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
+import SignUpComponent from './SignUp'
+import SignInComponent from './SignIn'
 
 const Header = () => {
     return (
@@ -11,12 +13,8 @@ const Header = () => {
                     </div>
                     <div className='button_grp flex items-center gap-2.5'>
                         <Show when="signed-out">
-                            <SignInButton>
-                                <Button size={'lg'}>Sign In</Button>
-                            </SignInButton>
-                            <SignUpButton>
-                                <Button variant={'outline'} size={'lg'}>Sign Up</Button>
-                            </SignUpButton>
+                            <SignInComponent />
+                            <SignUpComponent />
                         </Show>
                         <Show when="signed-in">
                              <UserButton />

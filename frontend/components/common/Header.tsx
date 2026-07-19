@@ -1,5 +1,5 @@
-import React from 'react'
 import { Button } from '../ui/button'
+import { Show, SignInButton, SignUpButton, UserButton } from '@clerk/nextjs'
 
 const Header = () => {
     return (
@@ -10,8 +10,17 @@ const Header = () => {
                         <span>Image Converter</span>
                     </div>
                     <div className='button_grp flex items-center gap-2.5'>
-                        <Button size={'lg'}>Sign In</Button>
-                        <Button variant={'outline'} size={'lg'}>Sign Up</Button>
+                        <Show when="signed-out">
+                            <SignInButton>
+                                <Button size={'lg'}>Sign In</Button>
+                            </SignInButton>
+                            <SignUpButton>
+                                <Button variant={'outline'} size={'lg'}>Sign Up</Button>
+                            </SignUpButton>
+                        </Show>
+                        <Show when="signed-in">
+                             <UserButton />
+                        </Show>
                     </div>
                 </nav>
             </div>

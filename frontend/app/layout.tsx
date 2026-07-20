@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
-import { Montserrat } from "next/font/google";
+import { Montserrat } from "next/font/google"
+import { ui } from "@clerk/ui";
 import "./globals.css";
 import Header from "@/components/common/Header";
 import { Toaster } from "@/components/ui/sonner";
 import { ClerkProvider } from '@clerk/nextjs';
 import Applayout from "@/layout/layout";
-import {ui} from "@clerk/ui"
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
 });
-
 
 export const metadata: Metadata = {
   title: "Image Converter",

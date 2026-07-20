@@ -14,7 +14,7 @@ const SignUpComponent = () => {
           <DialogTitle>Sign Up</DialogTitle>
         </DialogHeader>
         <div className='signUpBody'>
-          <SignUp />
+          <SignUp routing="hash" />
         </div>
       </DialogContent>
     </Dialog>

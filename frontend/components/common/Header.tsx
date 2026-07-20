@@ -4,7 +4,7 @@ import SignUpComponent from './SignUp'
 import SignInComponent from './SignIn'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu'
-import { Dialog, DialogContent, DialogTrigger } from '../ui/dialog'
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from '../ui/dialog'
 
 const Header = () => {
     const { user } = useUser();
@@ -40,8 +40,13 @@ const Header = () => {
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
-                                <DialogContent className='border-none p-0 bg-transparent shadow-none w-fit max-w-fit flex justify-center'>
-                                    <UserProfile routing="hash" />
+                                <DialogContent className='min-w-fit'>
+                                    <DialogHeader>
+                                        <DialogTitle>Profile</DialogTitle>
+                                    </DialogHeader>
+                                    <div className='signUpBody'>
+                                        <UserProfile routing="hash" />
+                                    </div>
                                 </DialogContent>
                             </Dialog>
                         ) : (

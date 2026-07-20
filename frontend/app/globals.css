@@ -145,9 +145,11 @@ body {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   html {
     @apply font-sans;
   }
@@ -216,7 +218,8 @@ html {
   }
 }
 
-.cl-formButtonPrimary, .cl-alternativeMethodsBlockButton {
+.cl-formButtonPrimary,
+.cl-alternativeMethodsBlockButton {
   border: 1px solid var(--color-sky-700);
   border-radius: 0.35rem;
   background-color: var(--color-sky-700);
@@ -237,7 +240,8 @@ html {
 .cl-internal-114jbce {
   display: none !important;
 }
-.cl-dividerLine  {
+
+.cl-dividerLine {
   background-color: var(--color-gray-600) !important;
 }
 
@@ -252,4 +256,26 @@ html {
   color: var(--color-gray-100);
   right: 10px;
   top: 2px;
+}
+
+.cl-otpCodeFieldInput.cl-input {
+  border: 1px solid var(--color-gray-300) !important;
+  border-radius: 0.425rem;
+  padding: 0.575rem 1rem;
+  color: var(--color-gray-100) !important;
+}
+
+.cl-userButtonPopoverCard {
+  background-color: #202020;
+}
+
+.cl-userButtonPopoverActionButton {
+    &:hover {
+      background-color: #3a3a3a;
+      color: var(--color-gray-100);
+    }
+  }
+
+.cl-userButtonPopoverActions {
+  border-color: var(--color-gray-600);
 }

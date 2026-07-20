@@ -13,7 +13,7 @@ const SignInComponent = () => {
             <DialogTitle>Sign In</DialogTitle>
         </DialogHeader>
         <div className='signUpBody'>
-            <SignIn  />
+            <SignIn />
         </div>
       </DialogContent>
     </Dialog>

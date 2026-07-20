@@ -5,6 +5,7 @@ import Header from "@/components/common/Header";
 import { Toaster } from "@/components/ui/sonner";
 import { ClerkProvider } from '@clerk/nextjs';
 import Applayout from "@/layout/layout";
+import {ui} from "@clerk/ui"
 
 const montserrat = Montserrat({
   variable: "--font-montserrat",
@@ -29,7 +30,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <ClerkProvider>
+        <ClerkProvider ui={ui}>
           <Applayout>
             <Header />
             <main className="flex-1 py-10">{children}</main>

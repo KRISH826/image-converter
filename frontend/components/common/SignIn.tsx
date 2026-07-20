@@ -10,10 +10,10 @@ const SignInComponent = () => {
       </DialogTrigger>
       <DialogContent className='min-w-110!'>
         <DialogHeader>
-            <DialogTitle>Sign In</DialogTitle>
+          <DialogTitle>Sign In</DialogTitle>
         </DialogHeader>
         <div className='signUpBody'>
-            <SignIn />
+          <SignIn />
         </div>
       </DialogContent>
     </Dialog>

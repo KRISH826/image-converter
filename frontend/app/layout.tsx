@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Montserrat } from "next/font/google";
+import { Montserrat } from "next/font/google"
+import { ui } from "@clerk/ui";
 import "./globals.css";
 import Header from "@/components/common/Header";
 import { Toaster } from "@/components/ui/sonner";
@@ -10,7 +11,6 @@ const montserrat = Montserrat({
   variable: "--font-montserrat",
   subsets: ["latin"],
 });
-
 
 export const metadata: Metadata = {
   title: "Image Converter",
@@ -29,7 +29,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <ClerkProvider>
+        <ClerkProvider ui={ui}>
           <Applayout>
             <Header />
             <main className="flex-1 py-10">{children}</main>

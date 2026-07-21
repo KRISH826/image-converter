@@ -1,7 +1,15 @@
-import React from 'react'
-import { Button } from '../ui/button'
+"use client"
+import { useUser, useClerk, UserProfile } from '@clerk/nextjs'
+import SignUpComponent from './SignUp'
+import SignInComponent from './SignIn'
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu'
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from '../ui/dialog'
 
 const Header = () => {
+    const { user } = useUser();
+    const { signOut } = useClerk();
+
     return (
         <header className='header bg-stone-950 border-gray-700/50 border-b py-4'>
             <div className="container">
@@ -10,8 +18,43 @@ const Header = () => {
                         <span>Image Converter</span>
                     </div>
                     <div className='button_grp flex items-center gap-2.5'>
-                        <Button size={'lg'}>Sign In</Button>
-                        <Button variant={'outline'} size={'lg'}>Sign Up</Button>
+                        {user ? (
+                            <Dialog>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger className="outline-none">
+                                        <Avatar>
+                                            <AvatarImage src={user.imageUrl} />
+                                            <AvatarFallback className="uppercase bg-primary text-primary-foreground">
+                                                {user.firstName?.charAt(0) || 'U'}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-40">
+                                        <DialogTrigger asChild>
+                                            <DropdownMenuItem className="cursor-pointer">
+                                                Profile
+                                            </DropdownMenuItem>
+                                        </DialogTrigger>
+                                        <DropdownMenuItem className="cursor-pointer" onClick={() => signOut({ redirectUrl: '/' })}>
+                                            Sign Out
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <DialogContent className='min-w-fit'>
+                                    <DialogHeader>
+                                        <DialogTitle>Profile</DialogTitle>
+                                    </DialogHeader>
+                                    <div className='signUpBody'>
+                                        <UserProfile routing="hash" />
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+                        ) : (
+                            <>
+                                <SignInComponent />
+                                <SignUpComponent />
+                            </>
+                        )}
                     </div>
                 </nav>
             </div>

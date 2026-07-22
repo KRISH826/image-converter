@@ -28,8 +28,10 @@ const UploadFile = ({
     const [files, setFiles] = useState<UploadedFile[]>([])
     const [isDragging, setIsDragging] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null);
-    const [uploadAndConvertImage, { isLoading }] = useUploadandConvertImageMutation();
+    const [uploadAndConvertImage] = useUploadandConvertImageMutation();
     const [resultData, SetresultData] = useState<Convertedfile[]>([]);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0 });
 
 
     const validateFiles = (file: File) => {
@@ -112,26 +114,44 @@ const UploadFile = ({
     const handleSubmit = async () => {
         const validFiles = files.filter((file) => file.status !== 'error')
         if (validFiles.length === 0) return
-        const formData = new FormData();
-        validFiles.forEach((file) => {
-            formData.append('files', file.file)
-        })
+
+        setIsProcessing(true)
+        setProcessingProgress({ current: 0, total: validFiles.length })
+        const results: Convertedfile[] = []
+
         try {
-            const result = await uploadAndConvertImage(formData).unwrap();
-            toast.success(`${files.length} ${files.length > 1 ? 'images' : 'image'} Converted Successfully`)
-            SetresultData(result.data)
-            if (onSubmit) onSubmit(result)
+            await Promise.all(
+                validFiles.map(async (file) => {
+                    const formData = new FormData()
+                    formData.append('files', file.file)
+                    const result = await uploadAndConvertImage(formData).unwrap()
+                    if (result?.data?.[0]) {
+                        results.push(result.data[0])
+                    }
+                    setProcessingProgress((prev) => ({
+                        ...prev,
+                        current: prev.current + 1
+                    }))
+                })
+            )
+
+            toast.success(`${validFiles.length} ${validFiles.length > 1 ? 'images' : 'image'} Converted Successfully`)
+            SetresultData(results)
+            if (onSubmit) onSubmit({ data: results })
             clearAll()
         }
-        catch (error: any) {
+        catch (error: unknown) {
             console.error('Upload component error:', error)
             toast('Something went wrong. Please try again.')
+        } finally {
+            setIsProcessing(false)
         }
     }
 
     const clearDownload = () => {
         if (resultData.length > 0) {
             SetresultData([])
+            setFiles([])
         }
     }
 
@@ -242,9 +262,16 @@ const UploadFile = ({
 
                 {/* results-data */}
                 {
-                    isLoading ? <ProcessLoading /> : <>
-                        {resultData.length > 0 && <DownloadedFile data={resultData} />}
-                    </>
+                    isProcessing ? (
+                        <ProcessLoading
+                            current={processingProgress.current}
+                            total={processingProgress.total}
+                        />
+                    ) : (
+                        <>
+                            {resultData.length > 0 && <DownloadedFile data={resultData} />}
+                        </>
+                    )
                 }
 
             </CardContent>
@@ -265,9 +292,9 @@ const UploadFile = ({
                     )
                 }
 
-                <Button size="lg" variant="default" disabled={!!isLoading || validCount === 0} onClick={handleSubmit}>
+                <Button size="lg" variant="default" disabled={!!isProcessing || validCount === 0} onClick={handleSubmit}>
                     {
-                        isLoading ? (
+                        isProcessing ? (
                             <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Processing</>
                         ) : (
                             <>

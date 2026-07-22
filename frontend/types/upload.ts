@@ -17,7 +17,7 @@ export interface FileUploadProps {
   acceptedLabel?: string;
   submitLabel?: string;
   cancelLabel?: string;
-  onSubmit?: (files: UploadedFile[]) => void;
+  onSubmit?: (data: { data: Convertedfile[] }) => void;
   onCancel?: () => void;
 }
 

@@ -1,13 +1,21 @@
 import { Loader2 } from 'lucide-react'
-import React from 'react'
 
-const ProcessLoading = () => {
+interface ProcessLoadingProps {
+  current?: number
+  total?: number
+}
+
+const ProcessLoading = ({ current, total }: ProcessLoadingProps) => {
   return (
     <div className='min-h-40 w-full bg-background/40 backdrop-blur-lg flex items-center gap-3 rounded-md border p-2'>
-        <div className="flex w-full items-center justify-center flex-col gap-3">
-            <Loader2 className='sm:w-16 w-12 animate-spin text-white' />
-            <span className='xl:text-lg sm:text-base text-sm'>Processing Your Files....</span>
-        </div>
+      <div className="flex w-full items-center justify-center flex-col gap-3">
+        <Loader2 className='sm:w-16 w-12 animate-spin text-white' />
+        <span className='xl:text-lg sm:text-base text-sm font-medium'>
+          {total && total > 0
+            ? `Processing Your Files (${current}/${total})....`
+            : 'Processing Your Files....'}
+        </span>
+      </div>
     </div>
   )
 }

@@ -11,7 +11,7 @@ interface SignInProps {
 const SignInComponent = ({ open, onOpenChange, onSignUpClick }: SignInProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='min-w-110!'>
+      <DialogContent className='min-w-110! max-h-[90vh] overflow-y-auto scroll-fade scroll-smooth scrollbar-none'>
         <DialogHeader>
           <DialogTitle>Sign In</DialogTitle>
         </DialogHeader>

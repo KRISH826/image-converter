@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "65mb", // tumhara 60MB folder upload isse bina reject hue jayega
     },
+    middlewareClientMaxBodySize: "65mb",
   },
 };
 

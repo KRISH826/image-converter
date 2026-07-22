@@ -6,10 +6,10 @@ type props = {
     data: Convertedfile[]
 }
 
-const DownloadedFile = ({data}: props) => {
-    if(!Array.isArray(data) || data.length === 0) return null
+const DownloadedFile = ({ data }: props) => {
+    if (!Array.isArray(data) || data.length === 0) return null
     const downloadFile = (file: Convertedfile) => {
-       const link = document.createElement('a')
+        const link = document.createElement('a')
         link.href = `data:${file.mimeType};base64,${file.base64}`
         link.download = file.name
         link.click()

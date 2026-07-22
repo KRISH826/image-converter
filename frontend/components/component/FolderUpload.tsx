@@ -23,8 +23,10 @@ const FolderUpload = ({
     const [summary, setSummary] = useState<FolderSummary | null>(null)
     const [categorized, setCategorized] = useState<CategorizedFile[]>([])
     const inputRef = useRef<HTMLInputElement>(null);
-    const [uploadAndConvertImage, { isLoading }] = useUploadandConvertImageMutation();
+    const [uploadAndConvertImage] = useUploadandConvertImageMutation();
     const [resultData, SetresultData] = useState<Convertedfile[]>([]);
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0 });
 
     const processedFiles = (files: File[]) => {
         const { categorized, summary } = categorizeFiles(files); // typo fix
@@ -68,18 +70,31 @@ const FolderUpload = ({
             toast("No files found in the folder. Please try again.");
             return
         }
+
+        setIsProcessing(true)
+        setProcessingProgress({ current: 0, total: toConvert.length })
+        const converted: Convertedfile[] = []
+
         try {
-            let converted: Convertedfile[] = []
             if (toConvert.length > 0) {
-                const formData = new FormData();
-                const pathMap: Record<string, string> = {}
-                toConvert.forEach((c) => {
-                    formData.append('files', c.file)
-                    pathMap[c.file.name] = c.relativePath
-                })
-                formData.append('pathMap', JSON.stringify(pathMap))
-                const result = await uploadAndConvertImage(formData).unwrap();
-                converted = result.data
+                await Promise.all(
+                    toConvert.map(async (c) => {
+                        const formData = new FormData();
+                        const pathMap: Record<string, string> = {
+                            [c.file.name]: c.relativePath
+                        }
+                        formData.append('files', c.file)
+                        formData.append('pathMap', JSON.stringify(pathMap))
+                        const result = await uploadAndConvertImage(formData).unwrap();
+                        if (result?.data?.[0]) {
+                            converted.push(result.data[0])
+                        }
+                        setProcessingProgress((prev) => ({
+                            ...prev,
+                            current: prev.current + 1
+                        }))
+                    })
+                )
             }
 
             const passthroughData: Convertedfile[] = await Promise.all(
@@ -101,6 +116,8 @@ const FolderUpload = ({
         } catch (error) {
             console.error('Folder upload error:', error)
             toast.error('Something went wrong during folder processing.')
+        } finally {
+            setIsProcessing(false)
         }
     }
 
@@ -176,9 +193,16 @@ const FolderUpload = ({
 
                 {/* results-data */}
                 {
-                    isLoading ? <ProcessLoading /> : <>
-                        {resultData.length > 0 && <DownloadedFile data={resultData} />}
-                    </>
+                    isProcessing ? (
+                        <ProcessLoading 
+                            current={processingProgress.current} 
+                            total={processingProgress.total} 
+                        />
+                    ) : (
+                        <>
+                            {resultData.length > 0 && <DownloadedFile data={resultData} />}
+                        </>
+                    )
                 }
 
             </CardContent>
@@ -199,9 +223,9 @@ const FolderUpload = ({
                     )
                 }
 
-                <Button size="lg" variant="default" disabled={!!isLoading || !summary} onClick={handleSubmit}>
+                <Button size="lg" variant="default" disabled={!!isProcessing || !summary} onClick={handleSubmit}>
                     {
-                        isLoading ? (
+                        isProcessing ? (
                             <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Processing</>
                         ) : (
                             <>

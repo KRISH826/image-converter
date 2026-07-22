@@ -29,7 +29,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <ClerkProvider ui={ui}>
+        <ClerkProvider 
+          ui={ui}
+          signInUrl="/#sign-in"
+          signUpUrl="/#sign-up"
+        >
           <Applayout>
             <Header />
             <main className="flex-1 py-10">{children}</main>

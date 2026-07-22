@@ -151,6 +151,7 @@ const UploadFile = ({
     const clearDownload = () => {
         if (resultData.length > 0) {
             SetresultData([])
+            setFiles([])
         }
     }
 

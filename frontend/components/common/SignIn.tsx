@@ -2,18 +2,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { SignIn } from '@clerk/nextjs'
 import { Button } from '../ui/button'
 
-const SignInComponent = () => {
+interface SignInProps {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+const SignInComponent = ({ open, onOpenChange }: SignInProps) => {
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button size={'lg'}>Sign In</Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='min-w-110!'>
         <DialogHeader>
           <DialogTitle>Sign In</DialogTitle>
         </DialogHeader>
         <div className='signUpBody'>
-          <SignIn routing="hash" />
+          <SignIn routing="hash" signUpUrl="#sign-up" />
         </div>
       </DialogContent>
     </Dialog>

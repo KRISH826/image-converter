@@ -14,7 +14,7 @@ interface conversionDto {
 const OUTPUT_TTL_MS = 15 * 60 * 1000;
 const pendingCleanUp = new Map<string, number>();
 
-const scheduleCleanUp = (outputPath:string) => {
+const scheduleCleanUp = (outputPath: string) => {
     pendingCleanUp.set(outputPath, Date.now() + OUTPUT_TTL_MS);
 }
 
@@ -26,7 +26,7 @@ setInterval(async () => {
             pendingCleanUp.delete(filePath);
         }
     }
-}, 2*60*1000);
+}, 2 * 60 * 1000);
 
 export const conversionImageWorker = () => {
     return new Worker(
@@ -42,11 +42,11 @@ export const conversionImageWorker = () => {
                     fit: 'inside',
                     kernel: 'linear'
                 }).webp({
-                    quality: 30,
+                    quality: 45,
                     effort: 2
                 }).toBuffer()
 
-           const safeFilename = path.basename(filename.replace(/\\/g, '/'));
+            const safeFilename = path.basename(filename.replace(/\\/g, '/'));
             const originalName = safeFilename.substring(0, safeFilename.lastIndexOf('.')) || safeFilename;
             const outPutName = `${originalName}.webp`;
             const outputPath = path.join(
@@ -56,7 +56,7 @@ export const conversionImageWorker = () => {
             await writeFile(outputPath, webpBuffer);
             await unlink(filePath).catch(() => { });
             scheduleCleanUp(outputPath);
-            
+
             return {
                 name: `${originalName}.webp`,
                 mimeType: "image/webp",

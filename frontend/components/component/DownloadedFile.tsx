@@ -29,7 +29,9 @@ const DownloadedFile = ({data}: props) => {
                     <div className="flex min-w-0 flex-1 flex-col">
                         <span className="truncate text-sm font-medium">{file.name}</span>
                         <span className="text-muted-foreground text-xs">
-                            {(file.size / (1024 * 1024)).toFixed(2)} MB
+                            {file.size >= 1024 * 1024
+                                ? `${(file.size / (1024 * 1024)).toFixed(2)} MB`
+                                : `${(file.size / 1024).toFixed(2)} KB`}
                         </span>
                     </div>
                     <button

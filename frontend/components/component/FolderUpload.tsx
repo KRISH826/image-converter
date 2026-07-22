@@ -4,28 +4,21 @@ import React, { useCallback, useRef, useState } from 'react'
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
-import { CategorizedFile, Convertedfile, FileStatus, FileUploadProps, FolderSummary, UploadedFile } from '@/types/upload'
-import { FileImage, FolderUp, Loader2, UploadCloud, X } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
+import { CategorizedFile, Convertedfile, FileUploadProps, FolderSummary } from '@/types/upload'
+import { FolderUp, Loader2, UploadCloud } from 'lucide-react'
 import { toast } from 'sonner'
 import { useUploadandConvertImageMutation } from '@/services/conversionApi'
 import DownloadedFile from './DownloadedFile'
 import ProcessLoading from './ProcessLoading'
 import JSZip from 'jszip'
 import { categorizeFiles, traverseFiletTree } from '@/lib/folder-utils'
-import { tryCatch } from 'bullmq'
 
 
 const FolderUpload = ({
     title = 'Submit Your Folder',
     description = 'Attach supporting documents to complete your submission.',
-    maxFiles = 20,
-    maxSizeMB = 50,
-    acceptedLabel = 'JPG or PNG, up to',
-    onSubmit,
-    onCancel,
+    maxSizeMB = 30,
 }: FileUploadProps) => {
-    const [files, setFiles] = useState<UploadedFile[]>([])
     const [isDragging, setIsDragging] = useState(false)
     const [summary, setSummary] = useState<FolderSummary | null>(null)
     const [categorized, setCategorized] = useState<CategorizedFile[]>([])
@@ -34,7 +27,7 @@ const FolderUpload = ({
     const [resultData, SetresultData] = useState<Convertedfile[]>([]);
 
     const processedFiles = (files: File[]) => {
-         const { categorized, summary } = categorizeFiles(files); // typo fix
+        const { categorized, summary } = categorizeFiles(files); // typo fix
         if (summary.totalsize > maxSizeMB * 1024 * 1024) return toast(`File size exceeds the limit of ${maxSizeMB}MB. Please try again.`);
 
         if (summary.totalfiles === 0) {
@@ -71,17 +64,18 @@ const FolderUpload = ({
         const toConvert = categorized.filter((f) => f.type === 'jpeg' || f.type === 'png')
         const passthrough = categorized.filter((f) => f.type !== 'jpeg' && f.type !== 'png')
 
-        if(toConvert.length === 0 && passthrough.length === 0) {
+        if (toConvert.length === 0 && passthrough.length === 0) {
             toast("No files found in the folder. Please try again.");
             return
         }
         try {
-            let converted:Convertedfile[] = []
-            if(toConvert.length > 0) {
+            let converted: Convertedfile[] = []
+            if (toConvert.length > 0) {
                 const formData = new FormData();
                 const pathMap: Record<string, string> = {}
-                toConvert.forEach((c) => {formData.append('files', c.file)
-                pathMap[c.file.name] = c.relativePath
+                toConvert.forEach((c) => {
+                    formData.append('files', c.file)
+                    pathMap[c.file.name] = c.relativePath
                 })
                 formData.append('pathMap', JSON.stringify(pathMap))
                 const result = await uploadAndConvertImage(formData).unwrap();
@@ -89,7 +83,7 @@ const FolderUpload = ({
             }
 
             const passthroughData: Convertedfile[] = await Promise.all(
-               passthrough.map(async (c) => {
+                passthrough.map(async (c) => {
                     const buffer = await c.file.arrayBuffer()
                     const base64 = btoa(new Uint8Array(buffer).reduce((data, byte) => data + String.fromCharCode(byte), ''))
                     return {
@@ -101,7 +95,7 @@ const FolderUpload = ({
                     }
                 })
             )
-            
+
             SetresultData([...converted, ...passthroughData])
             toast.success(`Processed: ${toConvert.length} converted, ${passthrough.length} skipped (already optimized).`)
         } catch (error) {
@@ -174,8 +168,8 @@ const FolderUpload = ({
                         <Badge variant="secondary">Total: {summary.totalfiles} files ({(summary.totalsize / 1024 / 1024).toFixed(1)}MB)</Badge>
                         {summary.jpeg > 0 && <Badge>{summary.jpeg} JPEG</Badge>}
                         {summary.png > 0 && <Badge>{summary.png} PNG</Badge>}
-                        {/* {summary.webp > 0 && <Badge variant="outline">{summary.webp} WebP (skip)</Badge>} */}
                         {summary.svg > 0 && <Badge variant="outline">{summary.svg} SVG (skip)</Badge>}
+                        {summary.webp > 0 && <Badge variant="outline">{summary.webp} WebP (skip)</Badge>}
                         {summary.other > 0 && <Badge variant="destructive">{summary.other} unsupported</Badge>}
                     </div>
                 )}

@@ -13,11 +13,7 @@ import DownloadedFile from './DownloadedFile'
 import ProcessLoading from './ProcessLoading'
 import JSZip from 'jszip'
 
-const title = 'Submit Your Report'
-const description = 'Attach supporting documents to complete your submission.'
-const maxFiles = 6
-const maxSizeMB = 25
-const files = 20
+
 const ACCEPTED_FILE_TYPES = ['image/jpeg', 'image/png']
 
 const UploadFile = ({
@@ -220,7 +216,9 @@ const UploadFile = ({
                                                 {file.file.name}
                                             </span>
                                             <span className="text-muted-foreground text-xs">
-                                                {(file.file.size / (1024 * 1024)).toFixed(2)} MB
+                                                {file.file.size >= 1024 * 1024
+                                                    ? `${(file.file.size / (1024 * 1024)).toFixed(2)} MB`
+                                                    : `${(file.file.size / 1024).toFixed(2)} KB`}
                                             </span>
                                             {file.error && (
                                                 <span className="text-xs text-red-500">{file.error}</span>

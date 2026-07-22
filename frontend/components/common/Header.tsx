@@ -3,12 +3,17 @@ import { useUser, useClerk, UserProfile } from '@clerk/nextjs'
 import SignUpComponent from './SignUp'
 import SignInComponent from './SignIn'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '../ui/dropdown-menu'
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from '../ui/dialog'
+import Link from 'next/link'
+import { Button } from '../ui/button'
+import { User, LogOut, ChevronDown } from 'lucide-react'
 
 const Header = () => {
     const { user } = useUser();
     const { signOut } = useClerk();
+
+    console.log(user)
 
     return (
         <header className='header bg-stone-950 border-gray-700/50 border-b py-4'>
@@ -21,22 +26,29 @@ const Header = () => {
                         {user ? (
                             <Dialog>
                                 <DropdownMenu>
-                                    <DropdownMenuTrigger className="outline-none">
+                                    <DropdownMenuTrigger className="outline-none flex items-center gap-2 hover:opacity-85 transition-opacity cursor-pointer">
                                         <Avatar>
                                             <AvatarImage src={user.imageUrl} />
                                             <AvatarFallback className="uppercase bg-primary text-primary-foreground">
                                                 {user.firstName?.charAt(0) || 'U'}
                                             </AvatarFallback>
                                         </Avatar>
+                                        <span className="text-sm font-medium text-zinc-300">
+                                            {user.firstName}
+                                        </span>
+                                        <ChevronDown className="h-4 w-4 text-zinc-500" />
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end" className="w-40">
                                         <DialogTrigger asChild>
-                                            <DropdownMenuItem className="cursor-pointer">
-                                                Profile
+                                            <DropdownMenuItem className="cursor-pointer flex items-center gap-2">
+                                                <User className="h-4 w-4" />
+                                                <span>Profile</span>
                                             </DropdownMenuItem>
                                         </DialogTrigger>
-                                        <DropdownMenuItem className="cursor-pointer" onClick={() => signOut({ redirectUrl: '/' })}>
-                                            Sign Out
+                                        <DropdownMenuSeparator className="bg-zinc-800" />
+                                        <DropdownMenuItem className="cursor-pointer flex items-center gap-2" onClick={() => signOut({ redirectUrl: '/' })}>
+                                            <LogOut className="h-4 w-4" />
+                                            <span>Sign Out</span>
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -51,8 +63,12 @@ const Header = () => {
                             </Dialog>
                         ) : (
                             <>
-                                <SignInComponent />
-                                <SignUpComponent />
+                                <Link href="/sign-in">
+                                    <Button size={'lg'}>Sign In</Button>
+                                </Link>
+                                <Link href="/sign-up">
+                                    <Button variant={'outline'} size={'lg'}>Sign Up</Button>
+                                </Link>
                             </>
                         )}
                     </div>

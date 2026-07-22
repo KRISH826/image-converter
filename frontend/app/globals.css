@@ -279,3 +279,6 @@ html {
 .cl-userButtonPopoverActions {
   border-color: var(--color-gray-600);
 }
+.cl-footerAction {
+  display: none !important;
+}

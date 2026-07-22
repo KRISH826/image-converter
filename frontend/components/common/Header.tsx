@@ -101,13 +101,21 @@ const Header = () => {
                                 <Button size={'lg'} onClick={() => setIsSignInOpen(true)}>Sign In</Button>
                                 <Button variant={'outline'} size={'lg'} onClick={() => setIsSignUpOpen(true)}>Sign Up</Button>
 
-                                <SignInComponent 
-                                    open={isSignInOpen} 
+                                <SignInComponent
+                                    open={isSignInOpen}
                                     onOpenChange={handleSignInOpenChange}
+                                    onSignUpClick={() => {
+                                        setIsSignInOpen(false);
+                                        setIsSignUpOpen(true);
+                                    }}
                                 />
-                                <SignUpComponent 
-                                    open={isSignUpOpen} 
+                                <SignUpComponent
+                                    open={isSignUpOpen}
                                     onOpenChange={handleSignUpOpenChange}
+                                    onSignInClick={() => {
+                                        setIsSignUpOpen(false);
+                                        setIsSignInOpen(true);
+                                    }}
                                 />
                             </>
                         )}

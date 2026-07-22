@@ -29,10 +29,8 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <ClerkProvider 
+        <ClerkProvider
           ui={ui}
-          signInUrl="/#sign-in"
-          signUpUrl="/#sign-up"
         >
           <Applayout>
             <Header />

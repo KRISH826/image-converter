@@ -87,7 +87,7 @@ const Header = () => {
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
-                                <DialogContent className='min-w-fit'>
+                                <DialogContent className='min-w-fit max-h-[90vh] overflow-y-auto scroll-fade scroll-smooth scrollbar-none'>
                                     <DialogHeader>
                                         <DialogTitle>Profile</DialogTitle>
                                     </DialogHeader>
